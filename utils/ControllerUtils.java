@@ -2,6 +2,8 @@ package utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class ControllerUtils {
 
@@ -43,14 +45,29 @@ public class ControllerUtils {
     public static List<Class<?>> getControllerClasses(String packageName) {
         List<Class<?>> controllerClasses = new ArrayList<>();
         List<Class<?>> allClasses = getFiles(packageName);
-
         for (Class<?> clazz : allClasses) {
             if (clazz.isAnnotationPresent(annotation.Controller.class)) {
                 controllerClasses.add(clazz);
+
             }
         }
 
         return controllerClasses;
     }
 
+    public static Map<String, MethodeClass> getMethodeClasses(List<Class<?>> controllerClasses) {
+        Map<String, MethodeClass> methodMap = new HashMap<>();
+        for (Class<?> controllerClass : controllerClasses) {
+            java.lang.reflect.Method[] methods = controllerClass.getDeclaredMethods();
+            for (java.lang.reflect.Method method : methods) {
+                if (method.isAnnotationPresent(annotation.UrlMapping.class)) {
+                    utils.MethodeClass methodeClass = new utils.MethodeClass();
+                    methodeClass.controllerClass = controllerClass;
+                    methodeClass.methods = method;
+                    methodMap.put(method.getAnnotation(annotation.UrlMapping.class).value(), methodeClass);
+                }
+            }
+        }
+        return methodMap;
+    }
 }

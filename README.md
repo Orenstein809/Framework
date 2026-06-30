@@ -1,1 +1,7 @@
 # Framework
+
+Sprint 02 :
+-nouvelle AnnotationMethode
+-nouvelle Class MethodeUtils avec attributs Methode Class
+-ControllerUtils : fonction qui prend tous methodes annoter mettre dans Map<string,ClassMethode>
+-DispatcherServlet : verification des url entrant, si un url correspond a une methode on affiche,sinon on affiche les disponible 
