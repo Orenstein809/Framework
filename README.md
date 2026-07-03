@@ -8,5 +8,6 @@ Sprint 02 :
 
 Sprint 03 :
 - nouvelle Class UrlMethode(url et methode)
+- Annotation UrlMapping Update
 - fonction getmethodeClasses
 -  

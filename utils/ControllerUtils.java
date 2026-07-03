@@ -1,10 +1,10 @@
 package utils;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.lang.reflect.Method;
 
 public class ControllerUtils {
 
@@ -78,9 +78,13 @@ public class ControllerUtils {
             Method[] methods = controllerClasse.getDeclaredMethods();
             for (Method method : methods) {
                 if (method.isAnnotationPresent(annotation.UrlMapping.class)) {
-                    UrlMethode urlMethode = new UrlMethode();
-                    urlMethode.setUrl(method.getAnnotation(annotation.UrlMapping.class).value());
-                    urlMethode.setMethode(method.getAnnotation(annotation.UrlMapping.class).method());
+                    UrlMethode urlMethode = new UrlMethode(
+                            method.getAnnotation(annotation.UrlMapping.class).value(),
+                            method.getAnnotation(annotation.UrlMapping.class).method()
+                    );
+                    if (methodMap.containsKey(urlMethode)) {
+                        throw new RuntimeException("Duplicate mapping for URL: " + urlMethode.getUrl() + " and method: " + urlMethode.getMethode());
+                    }
                     MethodeClass methodeClass = new MethodeClass();
                     methodeClass.setControllerClass(controllerClasse);
                     methodeClass.setMethod(method);
@@ -89,6 +93,10 @@ public class ControllerUtils {
             }
         }
         return methodMap;
+    }
+
+    public static MethodeClass getMethodeClass(Map<UrlMethode, MethodeClass> methodMap, String url, String methode) {
+        return methodMap.get(new UrlMethode(url, methode));
     }
 
 }
