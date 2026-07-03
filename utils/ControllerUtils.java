@@ -1,9 +1,10 @@
 package utils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+import java.lang.reflect.Method;
 
 public class ControllerUtils {
 
@@ -70,4 +71,24 @@ public class ControllerUtils {
         }
         return methodMap;
     }
+
+    public static Map<UrlMethode, MethodeClass> getmethodeClasses(List<Class<?>> controllerClasses) {
+        Map<UrlMethode, MethodeClass> methodMap = new HashMap<>();
+        for (Class<?> controllerClasse : controllerClasses) {
+            Method[] methods = controllerClasse.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(annotation.UrlMapping.class)) {
+                    UrlMethode urlMethode = new UrlMethode();
+                    urlMethode.setUrl(method.getAnnotation(annotation.UrlMapping.class).value());
+                    urlMethode.setMethode(method.getAnnotation(annotation.UrlMapping.class).method());
+                    MethodeClass methodeClass = new MethodeClass();
+                    methodeClass.setControllerClass(controllerClasse);
+                    methodeClass.setMethod(method);
+                    methodMap.put(urlMethode, methodeClass);
+                }
+            }
+        }
+        return methodMap;
+    }
+
 }

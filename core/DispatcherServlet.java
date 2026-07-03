@@ -9,17 +9,20 @@ import utils.MethodeClass;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
+import utils.UrlMethode;
 
 public class DispatcherServlet extends HttpServlet {
+
     List<Class<?>> controllerClasses = new ArrayList<>();
-    Map<String, MethodeClass> methodMap = new HashMap<>();
+    Map<String, MethodeClass> methodMap1 = new HashMap<>();
+    Map<UrlMethode, MethodeClass> methodMap = new HashMap<>();
 
     @Override
     public void init() throws ServletException {
         try {
             String controllersPackage = getServletConfig().getInitParameter("controller");
             controllerClasses = utils.ControllerUtils.getControllerClasses(controllersPackage);
-            methodMap = utils.ControllerUtils.getMethodeClasses(controllerClasses);
+            methodMap = utils.ControllerUtils.getmethodeClasses(controllerClasses);
         } catch (Exception e) {
             throw new ServletException("Erreur lors du scan des contrôleurs", e);
         }
@@ -35,7 +38,7 @@ public class DispatcherServlet extends HttpServlet {
                     + methodClass.getMethods().getName());
         } else {
             response.getWriter().write("Aucune methode correspondante trouvee pour le chemin. Methode dispo : ");
-            for (String path : methodMap.keySet()) {
+            for (String path : methodMap1.keySet()) {
                 response.getWriter().write(path + " ");
             }
         }
