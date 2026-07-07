@@ -1,5 +1,7 @@
 package utils;
 
+import java.util.Objects;
+
 public class UrlMethode {
 
     private String url;
@@ -49,7 +51,7 @@ public class UrlMethode {
 
     @Override
     public int hashCode() {
-
+        return Objects.hash(url, methode);
     }
 
 }
