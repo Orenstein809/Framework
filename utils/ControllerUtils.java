@@ -99,4 +99,10 @@ public class ControllerUtils {
         return methodMap.get(new UrlMethode(url, methode));
     }
 
+    public static void findAllMethodesWithUrlMethod(String packageName, Map<UrlMethode, MethodeClass> mapToFill) {
+        List<Class<?>> controllerClasses = getControllerClasses(packageName);
+        Map<UrlMethode, MethodeClass> scannedMap = getmethodeClasses(controllerClasses);    
+        mapToFill.putAll(scannedMap);
+}
+
 }

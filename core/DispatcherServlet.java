@@ -6,17 +6,15 @@ import jakarta.servlet.http.*;
 import java.util.Map;
 import java.util.HashMap;
 import utils.ControllerUtils;
-import utils.MethodeClass; // Mis à jour
-import utils.UrlMethode;   // Mis à jour
+import utils.MethodeClass; 
+import utils.UrlMethode;   
 
 public class DispatcherServlet extends HttpServlet {
     
-    // Utilisation des nouvelles classes d'utilitaires
     private Map<UrlMethode, MethodeClass> listeInfoMethodeAndController = new HashMap<>();
 
     @Override
     public void init() throws ServletException {
-        // Le Dispatcher récupère la Map déjà créée par le Listener au démarrage
         Object attribute = this.getServletContext().getAttribute("listeInfoMethodeAndController");
         if (attribute != null) {
             this.listeInfoMethodeAndController = (Map<UrlMethode, MethodeClass>) attribute;
@@ -24,7 +22,7 @@ public class DispatcherServlet extends HttpServlet {
     }
     
     public void affichage(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+        throws ServletException, IOException {
         String servletPath = request.getRequestURI();
         String nameApplication = request.getContextPath();
         String url = servletPath.substring(nameApplication.length());
@@ -36,27 +34,37 @@ public class DispatcherServlet extends HttpServlet {
             "<h1>Statut du Dispatcher</h1>\n<ul>"
         );
 
-        // Recherche de la correspondance URL/Méthode via ton utilitaire
-        MethodeClass infoMethodeAndController = ControllerUtils.findClassByUrlMethod(listeInfoMethodeAndController, url, method);
+        MethodeClass infoMethodeAndController = ControllerUtils.getMethodeClass(listeInfoMethodeAndController, url, method);
 
         if (infoMethodeAndController == null) {
             response.getWriter().println("<p style='color:red;'>Aucune méthode trouvée pour l'URL : " + url + " [" + method + "]</p>");
             response.getWriter().println("<h3>Routes disponibles :</h3>");
             for (Map.Entry<UrlMethode, MethodeClass> entry : listeInfoMethodeAndController.entrySet()) {
-                response.getWriter().println("<li><b>" + entry.getKey().getUrl() + "</b> (" + entry.getKey().getMethode() + ") -> " + entry.getValue().getMethodeName() + "</li>");
+                String nomMethodeJava = (entry.getValue().getMethods() != null) ? entry.getValue().getMethods().getName() : "Inconnue";
+                response.getWriter().println("<li><b>" + entry.getKey().getUrl() + "</b> (" + entry.getKey().getMethode() + ") -> " + nomMethodeJava + "</li>");
             }
         } else {
             try {
-                // Invocation dynamique de la méthode du contrôleur
-                Object result = infoMethodeAndController.execute();
-                ControllerUtils.execute(result, request, response);
+                Class<?> clazz = infoMethodeAndController.getcontrollerClass();
+                java.lang.reflect.Method meth = infoMethodeAndController.getMethods();
+
+                Object controllerInstance = clazz.getDeclaredConstructor().newInstance();
+
+                Object result = meth.invoke(controllerInstance);
+
+                if (result != null) {
+                    response.getWriter().println("<h3>Résultat de l'exécution :</h3>");
+                    response.getWriter().println("<p>" + result.toString() + "</p>");
+                }
+
             } catch (Exception e) {
-                response.getWriter().println("<p>Erreur d'exécution : " + e.getMessage() + "</p>");
+                response.getWriter().println("<p style='color:red;'>Erreur d'exécution : " + e.getMessage() + "</p>");
+                e.printStackTrace();
             }
         }
 
-        response.getWriter().println("</ul></body></html>");
-    }
+    response.getWriter().println("</ul></body></html>");
+}
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -70,7 +78,6 @@ public class DispatcherServlet extends HttpServlet {
 
     private void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String uri = request.getRequestURI();
-        // Filtrage des fichiers statiques
         if (uri.endsWith(".html") || uri.endsWith(".css") || uri.endsWith(".js") || 
             uri.endsWith(".png") || uri.endsWith(".jpg") || uri.endsWith(".gif") || 
             uri.endsWith(".ico") || uri.endsWith(".svg") || uri.endsWith(".jsp")) {
