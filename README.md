@@ -14,6 +14,3 @@ Sprint 03 :
 Sprint 04 :
 - AppListener 
 - mettre dans context les  
-
-Sprint 05 :
-- Envoie des donne vers vue
