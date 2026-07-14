@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.HashMap;
 import utils.ControllerUtils;
 import utils.MethodeClass; 
-import utils.UrlMethode;   
+import utils.UrlMethode;
+import utils.ModelAndView; // Importation de la nouvelle classe
 
 public class DispatcherServlet extends HttpServlet {
     
@@ -28,43 +29,50 @@ public class DispatcherServlet extends HttpServlet {
         String url = servletPath.substring(nameApplication.length());
         String method = request.getMethod();
 
-        response.setContentType("text/html;charset=UTF-8");
-        response.getWriter().println(
-            "<!doctype html>\n<html lang=\"fr\">\n<head><title>Liste des controllers</title></head>\n<body>\n" +
-            "<h1>Statut du Dispatcher</h1>\n<ul>"
-        );
-
         MethodeClass infoMethodeAndController = ControllerUtils.getMethodeClass(listeInfoMethodeAndController, url, method);
 
         if (infoMethodeAndController == null) {
+            // Affichage de la page de diagnostic par défaut si aucune route n'est trouvée
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().println(
+                "<!doctype html>\n<html lang=\"fr\">\n<head><title>Liste des controllers</title></head>\n<body>\n" +
+                "<h1>Statut du Dispatcher</h1>\n<ul>"
+            );
             response.getWriter().println("<p style='color:red;'>Aucune méthode trouvée pour l'URL : " + url + " [" + method + "]</p>");
             response.getWriter().println("<h3>Routes disponibles :</h3>");
             for (Map.Entry<UrlMethode, MethodeClass> entry : listeInfoMethodeAndController.entrySet()) {
                 String nomMethodeJava = (entry.getValue().getMethods() != null) ? entry.getValue().getMethods().getName() : "Inconnue";
                 response.getWriter().println("<li><b>" + entry.getKey().getUrl() + "</b> (" + entry.getKey().getMethode() + ") -> " + nomMethodeJava + "</li>");
             }
+            response.getWriter().println("</ul></body></html>");
         } else {
             try {
                 Class<?> clazz = infoMethodeAndController.getcontrollerClass();
                 java.lang.reflect.Method meth = infoMethodeAndController.getMethods();
 
+                // Instanciation dynamique du contrôleur
                 Object controllerInstance = clazz.getDeclaredConstructor().newInstance();
 
+                // Invocation de la méthode du contrôleur
                 Object result = meth.invoke(controllerInstance);
 
-                if (result != null) {
+                // Si le résultat est un ModelAndView, on le traite via notre utilitaire
+                if (result instanceof ModelAndView) {
+                    ControllerUtils.execute(result, request, response);
+                } else if (result != null) {
+                    // Sinon, affichage brut classique de l'objet
+                    response.setContentType("text/html;charset=UTF-8");
                     response.getWriter().println("<h3>Résultat de l'exécution :</h3>");
                     response.getWriter().println("<p>" + result.toString() + "</p>");
                 }
 
             } catch (Exception e) {
+                response.setContentType("text/html;charset=UTF-8");
                 response.getWriter().println("<p style='color:red;'>Erreur d'exécution : " + e.getMessage() + "</p>");
                 e.printStackTrace();
             }
         }
-
-    response.getWriter().println("</ul></body></html>");
-}
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

@@ -105,4 +105,20 @@ public class ControllerUtils {
         mapToFill.putAll(scannedMap);
 }
 
+    public static void execute(Object result, HttpServletRequest request, HttpServletResponse response) {
+        if (result instanceof ModelAndView) {
+            ModelAndView modelAndView = (ModelAndView) result;
+            try {
+                if (modelAndView.getAttributs() != null) {
+                    for (Map.Entry<String, Object> entry : modelAndView.getAttributs().entrySet()) {
+                        request.setAttribute(entry.getKey(), entry.getValue());
+                    }
+                }
+                request.getRequestDispatcher(modelAndView.getView()).forward(request, response);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }
