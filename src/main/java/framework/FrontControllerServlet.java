@@ -88,9 +88,13 @@ public class FrontControllerServlet extends HttpServlet {
             Object controller = verbAction.getControllerInstance();
 
             try {
-                Object result = method.invoke(controller);
-
                 
+                Object[] args = MethodMapper.resolveParameters(method, req);
+
+                System.out.println("--> Execution de la méthode : " + method.getName());
+                Object result = method.invoke(controller, args);
+                System.out.println("<-- Fin execution. Résultat retourné : " + result);
+
                 if (method.isAnnotationPresent(WebApi.class)) {
                     if (result instanceof String) {
                         
