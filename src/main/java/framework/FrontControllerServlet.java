@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,6 +23,11 @@ import framework.annotation.Controller;
 import framework.annotation.UrlMapping;
 import framework.annotation.WebApi;
 
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024 * 2,  // 2MB
+    maxFileSize = 1024 * 1024 * 10,       // 10MB
+    maxRequestSize = 1024 * 1024 * 50     // 50MB
+)
 public class FrontControllerServlet extends HttpServlet {
 
     private List<String> controllers = new ArrayList<>();
@@ -140,4 +146,4 @@ public class FrontControllerServlet extends HttpServlet {
             throws ServletException, IOException {
         processRequest(req, resp);
     }
-}
+}
