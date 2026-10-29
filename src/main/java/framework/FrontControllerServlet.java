@@ -10,9 +10,13 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,9 +38,19 @@ public class FrontControllerServlet extends HttpServlet {
     private Map<String, VerbAction> mappings = new HashMap<>();
     private Gson gson = new Gson();
 
+    private static final String SESSION_MAP_KEY = "appSessionsMap";
+    private static final String SESSION_COOKIE_NAME = "app-test";
+
     @Override
     public void init() throws ServletException {
         super.init();
+
+        // Map globale des sessions (uuid -> MySession), partagée dans le ServletContext
+        ServletContext context = getServletContext();
+        if (context.getAttribute(SESSION_MAP_KEY) == null) {
+            context.setAttribute(SESSION_MAP_KEY, new ConcurrentHashMap<String, MySession>());
+        }
+
         try {
             
             Enumeration<java.net.URL> roots = Thread.currentThread()
@@ -82,8 +96,49 @@ public class FrontControllerServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Retrouve la session du client grâce au cookie "app-test", ou en crée une nouvelle.
+     */
+    private MySession getOrCreateSession(HttpServletRequest req, HttpServletResponse resp) {
+        @SuppressWarnings("unchecked")
+        Map<String, MySession> sessionsMap =
+                (Map<String, MySession>) getServletContext().getAttribute(SESSION_MAP_KEY);
+
+        String sessionUuid = null;
+        Cookie[] cookies = req.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (SESSION_COOKIE_NAME.equals(cookie.getName())) {
+                    sessionUuid = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        MySession clientSession = (sessionUuid != null) ? sessionsMap.get(sessionUuid) : null;
+
+        // Cookie absent ou session inconnue : on en crée une nouvelle
+        if (clientSession == null) {
+            sessionUuid = UUID.randomUUID().toString();
+            clientSession = new MySession();
+            sessionsMap.put(sessionUuid, clientSession);
+
+            Cookie sessionCookie = new Cookie(SESSION_COOKIE_NAME, sessionUuid);
+            sessionCookie.setPath(req.getContextPath().isEmpty() ? "/" : req.getContextPath());
+            sessionCookie.setMaxAge(60 * 60 * 24); // 1 jour
+            sessionCookie.setHttpOnly(true);
+            resp.addCookie(sessionCookie);
+        }
+
+        return clientSession;
+    }
+
     protected void processRequest(HttpServletRequest req, HttpServletResponse resp) 
             throws ServletException, IOException {
+        MySession clientSession = getOrCreateSession(req, resp);
+        // Accessible aussi depuis les vues (JSP) : ${mySession.attributes.xxx}
+        req.setAttribute("mySession", clientSession);
+
         String uri = req.getRequestURI();
         String contexte = req.getContextPath();
         String path = uri.substring(contexte.length());
@@ -94,8 +149,8 @@ public class FrontControllerServlet extends HttpServlet {
             Object controller = verbAction.getControllerInstance();
 
             try {
-                // Matching des paramètres HTTP avec les arguments de la méthode (Sprint 7)
-                Object[] args = MethodMapper.resolveParameters(method, req);
+                // Matching des paramètres HTTP avec les arguments de la méthode (+ injection de MySession)
+                Object[] args = MethodMapper.resolveParameters(method, req, clientSession);
 
                 System.out.println("--> Execution de la méthode : " + method.getName());
                 Object result = method.invoke(controller, args);

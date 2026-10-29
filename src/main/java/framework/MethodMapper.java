@@ -32,6 +32,7 @@ import framework.type.Fichier;
  *  - objet imbriqué ......... param-attr-attr          => name="emp-adresse-ville"
  *  - tableau / liste simple . nom ou nom[]             -> String[] tags  => name="tags" (répété)
  *  - liste de fichiers ...... nom ou nom[] (multiple)  -> List<Fichier>  => name="docs"
+ *  - session ................ MySession                -> injectée automatiquement (cookie "app-test")
  *  - liste d'objets ......... nom[i]-attribut          -> List<Employe> employes => name="employes[0]-nom"
  *
  * Le séparateur "." est aussi accepté à la place de "-" (emp.nom, emp.adresse.ville).
@@ -46,6 +47,14 @@ public class MethodMapper {
     private static final int MAX_ITEMS = 1000;
 
     public static Object[] resolveParameters(Method method, HttpServletRequest req) throws Exception {
+        return resolveParameters(method, req, null);
+    }
+
+    /**
+     * Comme ci-dessus, mais un paramètre de type MySession reçoit la session du client
+     * (à n'importe quelle position, y compris mélangé avec d'autres paramètres).
+     */
+    public static Object[] resolveParameters(Method method, HttpServletRequest req, MySession session) throws Exception {
         Parameter[] parameters = method.getParameters();
         Object[] args = new Object[parameters.length];
 
@@ -54,7 +63,9 @@ public class MethodMapper {
             Class<?> type = param.getType();
             String name = param.getName();
 
-            if (isSimpleType(type)) {
+            if (type == MySession.class) {
+                args[i] = session;
+            } else if (isSimpleType(type)) {
                 args[i] = convertValue(req.getParameter(name), type);
             } else if (type == Fichier.class) {
                 args[i] = extractFichier(req, name);
