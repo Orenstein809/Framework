@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import com.google.gson.Gson;
 
+import framework.annotation.Auth;
 import framework.annotation.Controller;
 import framework.annotation.UrlMapping;
 import framework.annotation.WebApi;
@@ -40,6 +41,8 @@ public class FrontControllerServlet extends HttpServlet {
 
     private static final String SESSION_MAP_KEY = "appSessionsMap";
     private static final String SESSION_COOKIE_NAME = "app-test";
+    private static final String AUTH_SESSION_KEY = "authenticated";
+    private static final String AUTH_ERROR_VIEW = "/error.jsp";
 
     @Override
     public void init() throws ServletException {
@@ -147,6 +150,13 @@ public class FrontControllerServlet extends HttpServlet {
             VerbAction verbAction = mappings.get(path);
             Method method = verbAction.getMethod();
             Object controller = verbAction.getControllerInstance();
+
+            // Méthode protégée par @Auth : la session doit contenir authenticated = true
+            if (method.isAnnotationPresent(Auth.class)
+                    && !Boolean.TRUE.equals(clientSession.get(AUTH_SESSION_KEY))) {
+                req.getRequestDispatcher(AUTH_ERROR_VIEW).forward(req, resp);
+                return;
+            }
 
             try {
                 // Matching des paramètres HTTP avec les arguments de la méthode (+ injection de MySession)
